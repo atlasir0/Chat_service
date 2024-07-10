@@ -1,4 +1,4 @@
-module Auth
+module github.com/atlasir0/Chat_service/Auth_chat
 
 go 1.21.1
 
@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/brianvoe/gofakeit v3.18.0+incompatible // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect

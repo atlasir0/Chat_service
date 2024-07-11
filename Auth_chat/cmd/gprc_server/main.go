@@ -29,8 +29,8 @@ type server struct {
 }
 
 func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc.CreateUserResponse, error) {
-	// Делаем запрос на вставку записи в таблицу user
-	builderInsert := sq.Insert("user").
+	// Делаем запрос на вставку записи в таблицу users
+	builderInsert := sq.Insert("users").
 		PlaceholderFormat(sq.Dollar).
 		Columns("name", "email", "password", "role").
 		Values(req.GetName(), req.GetEmail(), req.GetPassword(), req.GetRole()).
@@ -55,16 +55,17 @@ func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc
 }
 
 func (s *server) Get(ctx context.Context, req *desc.GetUserRequest) (*desc.GetUserResponse, error) {
-	// Делаем запрос на получение измененной записи из таблицы user
+	// Делаем запрос на получение измененной записи из таблицы users
 	builderSelectOne := sq.Select("id", "name", "email", "role", "created_at", "updated_at").
-		From("user").
+		From("users").
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"id": req.GetId()}).
 		Limit(1)
 
 	query, args, err := builderSelectOne.ToSql()
 	if err != nil {
-		log.Fatalf("failed to build query: %v", err)
+		log.Printf("failed to build query: %v", err)
+		return nil, err
 	}
 
 	var id int64
@@ -75,7 +76,8 @@ func (s *server) Get(ctx context.Context, req *desc.GetUserRequest) (*desc.GetUs
 
 	err = s.pool.QueryRow(ctx, query, args...).Scan(&id, &name, &email, &role, &createdAt, &updatedAt)
 	if err != nil {
-		log.Fatalf("failed to select user: %v", err)
+		log.Printf("failed to select user: %v", err)
+		return nil, err
 	}
 
 	log.Printf("id: %d, name: %s, email: %s, role: %v, created_at: %v, updated_at: %v\n", id, name, email, role, createdAt, updatedAt)
@@ -98,8 +100,8 @@ func (s *server) Get(ctx context.Context, req *desc.GetUserRequest) (*desc.GetUs
 }
 
 func (s *server) Update(ctx context.Context, req *desc.UpdateUserRequest) (*emptypb.Empty, error) {
-	// Делаем запрос на обновление записи в таблице user
-	builderUpdate := sq.Update("user").
+	// Делаем запрос на обновление записи в таблице users
+	builderUpdate := sq.Update("users").
 		PlaceholderFormat(sq.Dollar).
 		Set("name", req.GetName()).
 		Set("email", req.GetEmail()).
@@ -121,7 +123,7 @@ func (s *server) Update(ctx context.Context, req *desc.UpdateUserRequest) (*empt
 }
 
 func (s *server) Delete(ctx context.Context, req *desc.DeleteUserRequest) (*emptypb.Empty, error) {
-	builderDelete := sq.Delete("user").
+	builderDelete := sq.Delete("users").
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"id": req.GetId()})
 

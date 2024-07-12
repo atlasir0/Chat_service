@@ -1,6 +1,7 @@
 -- +goose Up
 -- SQL in this section is executed when the migration is applied.
 
+
 CREATE TABLE users (
                        id BIGSERIAL PRIMARY KEY,
                        name VARCHAR(255) NOT NULL,

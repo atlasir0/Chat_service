@@ -4,6 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"flag"
+	"log"
+	"net"
+	"time"
+
 	sq "github.com/Masterminds/squirrel"
 	desc "github.com/atlasir0/Chat_service/Auth_chat/grpc/pkg/note_v1"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
@@ -12,9 +16,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"log"
-	"net"
-	"time"
 )
 
 var configPath string
@@ -29,7 +30,6 @@ type server struct {
 }
 
 func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc.CreateUserResponse, error) {
-	// Делаем запрос на вставку записи в таблицу users
 	builderInsert := sq.Insert("users").
 		PlaceholderFormat(sq.Dollar).
 		Columns("name", "email", "password", "role").
@@ -55,7 +55,6 @@ func (s *server) Create(ctx context.Context, req *desc.CreateUserRequest) (*desc
 }
 
 func (s *server) Get(ctx context.Context, req *desc.GetUserRequest) (*desc.GetUserResponse, error) {
-	// Делаем запрос на получение измененной записи из таблицы users
 	builderSelectOne := sq.Select("id", "name", "email", "role", "created_at", "updated_at").
 		From("users").
 		PlaceholderFormat(sq.Dollar).

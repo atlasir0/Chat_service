@@ -20,3 +20,6 @@ generate-note-api:
 	--go-grpc_out=pkg/note_v1 --go-grpc_opt=paths=source_relative \
 	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
 	api/note_v1/note.proto
+
+go_run:
+	go run cmd/gprc_server/main.go -config-path="local.env"

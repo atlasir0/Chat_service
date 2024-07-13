@@ -31,7 +31,7 @@ func NewGRPCConfig() (GRPCConfig, error) {
 	if len(port) == 0 {
 		return nil, errors.New("grpc port not found")
 	}
-
+	
 	return &grpcConfig{
 		host: host,
 		port: port,

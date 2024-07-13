@@ -6,7 +6,7 @@ import (
 )
 
 type Implementation struct {
-	desc.UnimplementedNoteV1Server
+	desc.UnimplementedUserServiceServer
 	noteService service.NoteService
 }
 

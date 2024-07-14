@@ -5,11 +5,11 @@ import (
 	"log"
 	"net"
 
-	//	desc "github.com/atlasir0/Chat_service/Auth_chat/grpc/pkg/note_v1"
+	noteAPI "github.com/atlasir0/Chat_service/Auth_chat/internal/api/note"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
-	//	noteAPI "github.com/atlasir0/Chat_service/Auth_chat/internal/api/note"
 	noteRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/note"
 	noteService "github.com/atlasir0/Chat_service/Auth_chat/internal/service/note"
+	desc "github.com/atlasir0/Chat_service/Auth_chat/pkg/note_v1"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -34,7 +34,7 @@ func main() {
 		log.Fatalf("failed to get pg config: %v", err)
 	}
 
-	lis, err := net.Listen("tcp", grpcConfig.GRPCAddress())
+	lis, err := net.Listen("tcp", grpcConfig.Address())
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -51,7 +51,7 @@ func main() {
 
 	s := grpc.NewServer()
 	reflection.Register(s)
-	desc.RegisterNoteV1Server(s, noteAPI.NewImplementation(noteSrv))
+	desc.RegisterUserServiceServer(s, noteAPI.NewImplementation(noteSrv))
 
 	log.Printf("server listening at %v", lis.Addr())
 

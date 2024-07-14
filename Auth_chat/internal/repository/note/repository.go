@@ -9,6 +9,7 @@ import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository/note/converter"
 	modelRepo "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/note/model"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -72,7 +73,7 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 	return converter.ToNoteFromRepo(&note), nil
 }
 
-func (r *repo) Update(ctx context.Context, user *model.User) error {
+func (r *repo) Update(ctx context.Context, user *model.User) (*emptypb.Empty, error) {
 	builder := sq.Update(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Set(nameColumn, user.Name).
@@ -82,23 +83,31 @@ func (r *repo) Update(ctx context.Context, user *model.User) error {
 
 	query, args, err := builder.ToSql()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = r.db.Exec(ctx, query, args...)
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
-func (r *repo) Delete(ctx context.Context, id int64) error {
+func (r *repo) Delete(ctx context.Context, id int64) (*emptypb.Empty, error) {
 	builder := sq.Delete(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: id})
 
 	query, args, err := builder.ToSql()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = r.db.Exec(ctx, query, args...)
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
 }

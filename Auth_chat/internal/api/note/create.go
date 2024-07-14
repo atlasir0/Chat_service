@@ -15,7 +15,6 @@ func (i *Implementation) Create(ctx context.Context, req *desc.CreateRequest) (*
 		Email:    user.Email,
 		Password: user.Password,
 		Role:     int(user.Role),
-		
 	}
 
 	id, err := i.noteService.Create(ctx, userModel)

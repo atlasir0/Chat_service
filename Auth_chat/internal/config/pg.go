@@ -23,8 +23,6 @@ func NewPGConfig() (PGConfig, error) {
 	if len(dsn) == 0 {
 		return nil, errors.New("pg dsn not found")
 	}
-
-	// Логирование значения DSN
 	log.Printf("Loaded PG DSN: %s", dsn)
 
 	return &pgConfig{

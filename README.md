@@ -1,2 +1,3 @@
 # Chat_service
-gRPC chat 
+
+gRPC chat with auth

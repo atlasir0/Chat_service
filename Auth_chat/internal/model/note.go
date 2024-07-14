@@ -16,10 +16,11 @@ type User struct {
 }
 
 type UserInfo struct {
-	Id        int64
-	Name      string
-	Email     string
-	Role      int
+	Id        int64               
+	Name      string              
+	Email     string 
+	Role int   
 	CreatedAt time.Time
 	UpdatedAt sql.NullTime
 }
+

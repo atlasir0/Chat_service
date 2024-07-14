@@ -13,12 +13,13 @@ import (
 )
 
 const (
-	tableName = "user"
+	tableName = "users"
 
 	idColumn        = "id"
 	nameColumn      = "name"
 	emailColumn     = "email"
 	roleColumn      = "role"
+	passwordColumn  = "password"
 	createdAtColumn = "created_at"
 	updatedAtColumn = "updated_at"
 )
@@ -34,8 +35,8 @@ func NewRepository(db *pgxpool.Pool) repository.UserRepository {
 func (r *repo) Create(ctx context.Context, info *model.User) (int64, error) {
 	builder := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
-		Columns(nameColumn, emailColumn, roleColumn).
-		Values(info.Name, info.Email, info.Role).
+		Columns(nameColumn, emailColumn, roleColumn, passwordColumn).
+		Values(info.Name, info.Email, info.Role, info.Password).
 		Suffix("RETURNING id")
 
 	query, args, err := builder.ToSql()
@@ -65,7 +66,7 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 	}
 
 	var note modelRepo.User
-	err = r.db.QueryRow(ctx, query, args...).Scan(&note.ID, &note.Name, &note.Email, &note.Password, &note.Role, &note.CreatedAt, &note.UpdatedAt)
+	err = r.db.QueryRow(ctx, query, args...).Scan(&note.ID, &note.Name, &note.Email, &note.Role, &note.CreatedAt, &note.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}

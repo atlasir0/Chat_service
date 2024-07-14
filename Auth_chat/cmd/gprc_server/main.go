@@ -23,21 +23,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
+	log.Println("Config loaded successfully")
 
 	grpcConfig, err := config.NewGRPCConfig()
 	if err != nil {
 		log.Fatalf("failed to get grpc config: %v", err)
 	}
+	log.Printf("GRPC Config: %+v", grpcConfig)
 
 	pgConfig, err := config.NewPGConfig()
 	if err != nil {
 		log.Fatalf("failed to get pg config: %v", err)
 	}
+	log.Printf("PG Config: %+v", pgConfig)
 
 	lis, err := net.Listen("tcp", grpcConfig.Address())
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+	log.Printf("Listening on %s", grpcConfig.Address())
 
 	// Создаем пул соединений с базой данных
 	pool, err := pgxpool.Connect(ctx, pgConfig.DSN())
@@ -45,13 +49,18 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pool.Close()
+	log.Println("Connected to database successfully")
 
 	noteRepo := noteRepository.NewRepository(pool)
+	log.Println("Note repository initialized")
+
 	noteSrv := noteService.NewService(noteRepo)
+	log.Println("Note service initialized")
 
 	s := grpc.NewServer()
 	reflection.Register(s)
 	desc.RegisterUserServiceServer(s, noteAPI.NewImplementation(noteSrv))
+	log.Println("gRPC server registered and reflection enabled")
 
 	log.Printf("server listening at %v", lis.Addr())
 

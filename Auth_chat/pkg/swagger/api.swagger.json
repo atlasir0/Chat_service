@@ -1,13 +1,22 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "note.proto",
-    "version": "version not set"
+    "title": "Auth API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Rinat Kurmakaev",
+      "email": "rik.sadasd@gmail.com"
+    }
   },
   "tags": [
     {
       "name": "UserService"
     }
+  ],
+  "host": "localhost:8080",
+  "schemes": [
+    "http",
+    "https"
   ],
   "consumes": [
     "application/json"

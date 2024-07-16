@@ -2,18 +2,20 @@ package app
 
 import (
 	"context"
+	"log"
+	"net"
+	"net/http"
+	"sync"
+
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/interceptor"
 	desc "github.com/atlasir0/Chat_service/Auth_chat/pkg/note_v1"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
-	"log"
-	"net"
-	"net/http"
-	"sync"
 )
 
 type App struct {
@@ -99,7 +101,10 @@ func (a *App) initServiceProvider(_ context.Context) error {
 }
 
 func (a *App) initGRPCServer(ctx context.Context) error {
-	a.grpcServer = grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	a.grpcServer = grpc.NewServer(
+		grpc.Creds(insecure.NewCredentials()),
+		grpc.UnaryInterceptor(interceptor.ValidateInterceptor),
+	)
 
 	reflection.Register(a.grpcServer)
 

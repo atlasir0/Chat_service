@@ -51,8 +51,8 @@ enum UserRole {
 }
 
 message User {
-  string name = 1;
-  string email = 2;
+  string name = 1 [(validate.rules).string = {min_len: 1, max_len: 50}];
+  string email = 2 [(validate.rules).string.email = true];
   string password = 3;
   string password_confirm = 4;
   UserRole role = 5;
@@ -68,8 +68,8 @@ message UserInfo {
 }
 
 message UpdateUser {
-  google.protobuf.StringValue name = 1;
-  google.protobuf.StringValue email = 2;
+  google.protobuf.StringValue name = 1 [(validate.rules).string = {ignore_empty: true, min_len: 1, max_len: 50}];
+  google.protobuf.StringValue email = 2 [(validate.rules).string = {email: true, ignore_empty: true}];
   google.protobuf.StringValue password = 3;
   google.protobuf.StringValue password_confirm = 4;
   UserRole role = 5;

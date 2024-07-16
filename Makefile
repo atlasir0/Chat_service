@@ -100,44 +100,4 @@ test-coverage:
 	go tool cover -func=./coverage.out | grep "total";
 	grep -sqFx "/coverage.out" .gitignore || echo "/coverage.out" >> .gitignore
 
-vendor-proto:
-		@if [ ! -d vendor.protogen/google ]; then \
-			git clone https://github.com/googleapis/googleapis vendor.protogen/googleapis &&\
-			mkdir -p  vendor.protogen/google/ &&\
-			mv vendor.protogen/googleapis/google/api vendor.protogen/google &&\
-			rm -rf vendor.protogen/googleapis ;\
-		fi
-		@if [ ! -d vendor.protogen/validate ]; then \
-			mkdir -p vendor.protogen/validate &&\
-			git clone https://github.com/envoyproxy/protoc-gen-validate vendor.protogen/protoc-gen-validate &&\
-			mv vendor.protogen/protoc-gen-validate/validate/*.proto vendor.protogen/validate &&\
-			rm -rf vendor.protogen/protoc-gen-validate ;\
-		fi
-			@if [ ! -d vendor.protogen/protoc-gen-openapiv2 ]; then \
-			mkdir -p vendor.protogen/protoc-gen-openapiv2/options &&\
-			git clone https://github.com/grpc-ecosystem/grpc-gateway vendor.protogen/openapiv2 &&\
-			mv vendor.protogen/openapiv2/protoc-gen-openapiv2/options/*.proto vendor.protogen/protoc-gen-openapiv2/options &&\
-			rm -rf vendor.protogen/openapiv2 ;\
-		fi
 
-grpc-load-test:
-	bin/ghz.exe \
-		--proto api/user_v1/user.proto \
-		--import-paths=./vendor.protogen \
-		--call user_v1.UserV1.Get \
-		--data '{"id": 1}' \
-		--rps 100 \
-		--total 3000 \
-		--insecure \
-		localhost:${GRPC_PORT}
-
-grpc-error-load-test:
-	bin/ghz.exe \
-		--proto api/user_v1/user.proto \
-		--import-paths=./vendor.protogen \
-		--call user_v1.UserV1.Get \
-		--data '{"id": 0}' \
-		--rps 100 \
-		--total 3000 \
-		--insecure \
-		localhost:${GRPC_PORT}

@@ -74,15 +74,16 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 	a.grpcServer = grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
 
 	reflection.Register(a.grpcServer)
-	desc.RegisterUserServiceServer(a.grpcServer, a.serviceProvider.GetNoteImpl(ctx))
+
+	desc.RegisterUserServiceServer(a.grpcServer, a.serviceProvider.NoteImpl(ctx))
 
 	return nil
 }
 
 func (a *App) runGRPCServer() error {
-	log.Printf("GRPC server is running on %s", a.serviceProvider.GetGRPCConfig().Address())
+	log.Printf("GRPC server is running on %s", a.serviceProvider.GRPCConfig().Address())
 
-	list, err := net.Listen("tcp", a.serviceProvider.GetGRPCConfig().Address())
+	list, err := net.Listen("tcp", a.serviceProvider.GRPCConfig().Address())
 	if err != nil {
 		return err
 	}

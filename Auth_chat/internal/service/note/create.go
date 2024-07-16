@@ -1,8 +1,8 @@
-
 package note
 
 import (
 	"context"
+
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/model"
 )
 

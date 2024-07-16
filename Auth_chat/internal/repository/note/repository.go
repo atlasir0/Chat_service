@@ -4,11 +4,11 @@ import (
 	"context"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/model"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository/note/converter"
 	modelRepo "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/note/model"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -25,10 +25,10 @@ const (
 )
 
 type repo struct {
-	db *pgxpool.Pool
+	db db.Client
 }
 
-func NewRepository(db *pgxpool.Pool) repository.UserRepository {
+func NewRepository(db db.Client) repository.UserRepository {
 	return &repo{db: db}
 }
 
@@ -44,8 +44,13 @@ func (r *repo) Create(ctx context.Context, info *model.User) (int64, error) {
 		return 0, err
 	}
 
+	q := db.Query{
+		Name:     "note_repository.Create",
+		QueryRaw: query,
+	}
+
 	var id int64
-	err = r.db.QueryRow(ctx, query, args...).Scan(&id)
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -65,8 +70,13 @@ func (r *repo) Get(ctx context.Context, id int64) (*model.User, error) {
 		return nil, err
 	}
 
+	q := db.Query{
+		Name:     "note_repository.Get",
+		QueryRaw: query,
+	}
+
 	var note modelRepo.User
-	err = r.db.QueryRow(ctx, query, args...).Scan(&note.ID, &note.Name, &note.Email, &note.Role, &note.CreatedAt, &note.UpdatedAt)
+	err = r.db.DB().QueryRowContext(ctx, q, args...).Scan(&note.ID, &note.Name, &note.Email, &note.Role, &note.CreatedAt, &note.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +97,12 @@ func (r *repo) Update(ctx context.Context, user *model.User) (*emptypb.Empty, er
 		return nil, err
 	}
 
-	_, err = r.db.Exec(ctx, query, args...)
+	q := db.Query{
+		Name:     "note_repository.Create",
+		QueryRaw: query,
+	}
+
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,8 +119,12 @@ func (r *repo) Delete(ctx context.Context, id int64) (*emptypb.Empty, error) {
 	if err != nil {
 		return nil, err
 	}
+	q := db.Query{
+		Name:     "note_repository.Create",
+		QueryRaw: query,
+	}
 
-	_, err = r.db.Exec(ctx, query, args...)
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -17,9 +17,11 @@ func (i *Implementation) Update(ctx context.Context, req *desc.UpdateRequest) (*
 	if req.Name != nil {
 		userModel.Name = req.Name.Value
 	}
+
 	if req.Email != nil {
 		userModel.Email = req.Email.Value
 	}
+
 	updatedUser := &model.User{
 		ID:    req.Id,
 		Name:  userModel.Name,

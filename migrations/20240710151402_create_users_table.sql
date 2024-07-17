@@ -12,6 +12,29 @@ CREATE TABLE users (
                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS permissions(
+    id INT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    role INT,
+    path TEXT,
+    CONSTRAINT pk_permissions_id PRIMARY KEY(id)
+);
+
+CREATE TABLE IF NOT EXISTS log_transaction(
+    id INT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    info TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT pk_log_transaction_id PRIMARY KEY(id)
+);
+
+
+
+CREATE TABLE IF NOT EXISTS key_tokens(
+    id INT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    CONSTRAINT pk_key_tokens_id PRIMARY KEY(id)
+);
+
 -- +goose Down
 -- SQL in this section is executed when the migration is rolled back.
 DROP TABLE users;

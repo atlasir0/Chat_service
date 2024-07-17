@@ -6,11 +6,16 @@ import (
 )
 
 type User struct {
-	ID        int64
-	Name      string
-	Email     string
-	Password  string
-	Role      int
-	CreatedAt time.Time
-	UpdatedAt sql.NullTime
+	ID        int64        `db:"user_id"`
+	Name      string       `db:"name"`
+	Email     string       `db:"email"`
+	Password  string       `db:"password"`
+	Role      int          `db:"role"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt sql.NullTime `db:"updated_at"`
+}
+
+type UserFilter struct {
+	ID   *int64
+	Name *string
 }

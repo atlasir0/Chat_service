@@ -1,7 +1,4 @@
-include prod.env
-
 LOCAL_BIN:=$(pwd)/bin
-
 
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
 LOCAL_MIGRATION_DSN="host=localhost port=$(PG_PORT) dbname=$(PG_DATABASE_NAME) user=$(PG_USER) password=$(PG_PASSWORD) sslmode=disable"
@@ -102,3 +99,10 @@ test-coverage:
 	grep -sqFx "/coverage.out" .gitignore || echo "/coverage.out" >> .gitignore
 
 
+gen-cert:
+	openssl genrsa -out ca.key 4096
+	openssl req -new -x509 -key ca.key -sha256 -subj "/C=US/ST=NJ/O=CA, Inc." -days 365 -out ca.cert
+	openssl genrsa -out service.key 4096
+	openssl req -new -key service.key -out service.csr -config certificate.conf
+	openssl x509 -req -in service.csr -CA ca.cert -CAkey ca.key -CAcreateserial \
+    		-out service.pem -days 365 -sha256 -extfile certificate.conf -extensions req_ext

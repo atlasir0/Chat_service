@@ -11,6 +11,7 @@ import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository"
+	logRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/log"
 	noteRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/note"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/service"
 	noteService "github.com/atlasir0/Chat_service/Auth_chat/internal/service/note"
@@ -24,8 +25,8 @@ type serviceProvider struct {
 	dbClient       db.Client
 	txManager      db.TxManager
 	noteRepository repository.UserRepository
-
-	noteService service.UserService
+	logRepository  repository.LogRepository
+	noteService    service.UserService
 
 	noteImpl *note.Implementation
 }
@@ -120,11 +121,20 @@ func (s *serviceProvider) NoteRepository(ctx context.Context) repository.UserRep
 	return s.noteRepository
 }
 
+func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepository {
+	if s.logRepository == nil {
+		s.logRepository = logRepository.NewRepository(s.DBClient(ctx))
+	}
+
+	return s.logRepository
+}
+
 func (s *serviceProvider) NoteService(ctx context.Context) service.UserService {
 	if s.noteService == nil {
 		s.noteService = noteService.NewService(
 			s.NoteRepository(ctx),
 			s.TxManager(ctx),
+			s.LogRepository(ctx),
 		)
 	}
 

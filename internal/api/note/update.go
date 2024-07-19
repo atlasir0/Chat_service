@@ -29,7 +29,7 @@ func (i *Implementation) Update(ctx context.Context, req *desc.UpdateRequest) (*
 		Role:  userModel.Role,
 	}
 
-	_, err := i.noteService.Update(ctx, userModel, updatedUser)
+	err := i.noteService.Update(ctx, updatedUser)
 	if err != nil {
 		return nil, err
 	}

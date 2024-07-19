@@ -2,16 +2,30 @@ package note
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/model"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (s *serv) Update(ctx context.Context, info *model.User, req *model.User) (*emptypb.Empty, error) {
-	_, err := s.noteRepository.Update(ctx, info)
+func (s *serv) Update(ctx context.Context, user *model.User) error {
+	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+		errTx := s.noteRepository.Update(ctx, user)
+		if errTx != nil {
+			return errTx
+		}
+
+		errTx = s.logRepository.CreateLog(ctx, &model.Log{
+			Text: fmt.Sprintf("User updated: %d", user.ID),
+		})
+		if errTx != nil {
+			return errTx
+		}
+		return nil
+	})
+
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &emptypb.Empty{}, nil
+	return nil
 }

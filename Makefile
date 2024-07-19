@@ -1,7 +1,5 @@
-include prod.env
 
 LOCAL_BIN:=$(pwd)/bin
-
 
 LOCAL_MIGRATION_DIR=$(MIGRATION_DIR)
 LOCAL_MIGRATION_DSN="host=localhost port=$(PG_PORT) dbname=$(PG_DATABASE_NAME) user=$(PG_USER) password=$(PG_PASSWORD) sslmode=disable"
@@ -53,18 +51,18 @@ generate-auth-api:
 	mkdir -p pkg/auth_v1
 	protoc --proto_path api/auth_v1 \
 	--go_out=pkg/auth_v1 --go_opt=paths=source_relative \
-	--plugin=protoc-gen-go=bin/protoc-gen-go.exe \
+	--plugin=protoc-gen-go=bin/protoc-gen-go \
 	--go-grpc_out=pkg/auth_v1 --go-grpc_opt=paths=source_relative \
-	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc.exe \
+	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
 	api/auth_v1/auth.proto
 
 generate-access-api:
 	mkdir -p pkg/access_v1
 	protoc --proto_path api/access_v1 \
 	--go_out=pkg/access_v1 --go_opt=paths=source_relative \
-	--plugin=protoc-gen-go=bin/protoc-gen-go.exe \
+	--plugin=protoc-gen-go=bin/protoc-gen-go \
 	--go-grpc_out=pkg/access_v1 --go-grpc_opt=paths=source_relative \
-	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc.exe \
+	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
 	api/access_v1/access.proto
 
 build:
@@ -101,4 +99,22 @@ test-coverage:
 	go tool cover -func=./coverage.out | grep "total";
 	grep -sqFx "/coverage.out" .gitignore || echo "/coverage.out" >> .gitignore
 
-
+vendor-proto:
+		@if [ ! -d vendor.protogen/google ]; then \
+			git clone https://github.com/googleapis/googleapis vendor.protogen/googleapis &&\
+			mkdir -p  vendor.protogen/google/ &&\
+			mv vendor.protogen/googleapis/google/api vendor.protogen/google &&\
+			rm -rf vendor.protogen/googleapis ;\
+		fi
+		@if [ ! -d vendor.protogen/validate ]; then \
+			mkdir -p vendor.protogen/validate &&\
+			git clone https://github.com/envoyproxy/protoc-gen-validate vendor.protogen/protoc-gen-validate &&\
+			mv vendor.protogen/protoc-gen-validate/validate/*.proto vendor.protogen/validate &&\
+			rm -rf vendor.protogen/protoc-gen-validate ;\
+		fi
+			@if [ ! -d vendor.protogen/protoc-gen-openapiv2 ]; then \
+			mkdir -p vendor.protogen/protoc-gen-openapiv2/options &&\
+			git clone https://github.com/grpc-ecosystem/grpc-gateway vendor.protogen/openapiv2 &&\
+			mv vendor.protogen/openapiv2/protoc-gen-openapiv2/options/*.proto vendor.protogen/protoc-gen-openapiv2/options &&\
+			rm -rf vendor.protogen/openapiv2 ;\
+		fi

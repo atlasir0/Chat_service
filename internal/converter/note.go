@@ -2,8 +2,8 @@ package converter
 
 import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/model"
-	desc "github.com/atlasir0/Chat_service/Auth_chat/pkg/note_v1"
 	auth "github.com/atlasir0/Chat_service/Auth_chat/pkg/auth_v1"
+	desc "github.com/atlasir0/Chat_service/Auth_chat/pkg/note_v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -27,5 +27,14 @@ func ToServiceLogin(login *auth.LoginRequest) *model.Login {
 	return &model.Login{
 		Username: login.Username,
 		Password: login.Password,
+	}
+}
+
+func ToUserFromDescCreate(user *desc.User) *model.User {
+	return &model.User{
+		Name:     user.Name,
+		Email:    user.Email,
+		Password: user.Password,
+		Role:     int(user.Role),
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/api/access"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/api/login"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/api/note"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db/pg"
@@ -11,24 +13,35 @@ import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository"
-	logRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/log"
+
+	accessRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/access"
+	loginRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/login"
 	noteRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/note"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/service"
+	accessService "github.com/atlasir0/Chat_service/Auth_chat/internal/service/access"
+	loginService "github.com/atlasir0/Chat_service/Auth_chat/internal/service/login"
 	noteService "github.com/atlasir0/Chat_service/Auth_chat/internal/service/note"
 )
 
 type serviceProvider struct {
-	pgConfig       config.PGConfig
-	grpcConfig     config.GRPCConfig
-	httpConfig     config.HTTPConfig
-	swaggerConfig  config.SwaggerConfig
-	dbClient       db.Client
-	txManager      db.TxManager
-	noteRepository repository.UserRepository
-	logRepository  repository.LogRepository
-	noteService    service.UserService
+	pgConfig      config.PGConfig
+	grpcConfig    config.GRPCConfig
+	httpConfig    config.HTTPConfig
+	swaggerConfig config.SwaggerConfig
 
-	noteImpl *note.Implementation
+	dbClient         db.Client
+	txManager        db.TxManager
+	noteRepository   repository.UserRepository
+	loginRepository  repository.LoginRepository
+	accessRepository repository.AccessRepository
+
+	noteService   service.UserService
+	loginService  service.LoginService
+	accessService service.AccessService
+
+	noteImpl   *note.Implementation
+	loginImpl  *login.Implementation
+	accessImpl *access.Implementation
 }
 
 func newServiceProvider() *serviceProvider {
@@ -121,20 +134,11 @@ func (s *serviceProvider) NoteRepository(ctx context.Context) repository.UserRep
 	return s.noteRepository
 }
 
-func (s *serviceProvider) LogRepository(ctx context.Context) repository.LogRepository {
-	if s.logRepository == nil {
-		s.logRepository = logRepository.NewRepository(s.DBClient(ctx))
-	}
-
-	return s.logRepository
-}
-
 func (s *serviceProvider) NoteService(ctx context.Context) service.UserService {
 	if s.noteService == nil {
 		s.noteService = noteService.NewService(
 			s.NoteRepository(ctx),
 			s.TxManager(ctx),
-			s.LogRepository(ctx),
 		)
 	}
 
@@ -147,4 +151,57 @@ func (s *serviceProvider) NoteImpl(ctx context.Context) *note.Implementation {
 	}
 
 	return s.noteImpl
+}
+
+func (s *serviceProvider) LoginRepository(ctx context.Context) repository.LoginRepository {
+	if s.loginRepository == nil {
+		s.loginRepository = loginRepository.NewRepository(s.DBClient(ctx))
+	}
+
+	return s.loginRepository
+}
+
+func (s *serviceProvider) LoginService(ctx context.Context) service.LoginService {
+	if s.loginService == nil {
+		s.loginService = loginService.NewService(
+			s.LoginRepository(ctx),
+			s.TxManager(ctx),
+		)
+	}
+
+	return s.loginService
+}
+
+func (s *serviceProvider) LoginImpl(ctx context.Context) *login.Implementation {
+	if s.loginImpl == nil {
+		s.loginImpl = login.NewImplementation(s.LoginService(ctx))
+	}
+
+	return s.loginImpl
+}
+
+func (s *serviceProvider) AccessRepository(ctx context.Context) repository.AccessRepository {
+	if s.accessRepository == nil {
+		s.accessRepository = accessRepository.NewRepository(s.DBClient(ctx))
+	}
+
+	return s.accessRepository
+}
+
+func (s *serviceProvider) AccessService(ctx context.Context) service.AccessService {
+	if s.accessService == nil {
+		s.accessService = accessService.NewService(
+			s.AccessRepository(ctx),
+			s.TxManager(ctx),
+		)
+	}
+
+	return s.accessService
+}
+func (s *serviceProvider) AccessImpl(ctx context.Context) *access.Implementation {
+	if s.accessImpl == nil {
+		s.accessImpl = access.NewImplementation(s.AccessService(ctx))
+	}
+
+	return s.accessImpl
 }

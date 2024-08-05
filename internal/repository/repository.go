@@ -15,17 +15,13 @@ type UserRepository interface {
 	Delete(ctx context.Context, id int64) (*emptypb.Empty, error)
 }
 
-// LogRepository - ...
-type LogRepository interface {
-	CreateLog(ctx context.Context, log *model.Log) error
+type AccessRepository interface {
+	Roles(ctx context.Context) (map[string]string, error)
 }
 
-// PermRepository - ...
-type PermRepository interface {
-	GetPermission(ctx context.Context) ([]*model.Permission, error)
-}
-
-// SecretRepository - ...
-type SecretRepository interface {
-	GetKeyTokens(ctx context.Context, tokenName string) (string, error)
+type LoginRepository interface {
+	Login(ctx context.Context, info *model.UserClaims) (string, error)
+	GetAccessToken(ctx context.Context, token string) (string, error)
+	GetRefreshToken(ctx context.Context, token string) (string, error)
+	GetUserRole(ctx context.Context) (string, error)
 }

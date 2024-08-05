@@ -14,12 +14,12 @@ type UserService interface {
 	Delete(ctx context.Context, id int64) (*emptypb.Empty, error)
 }
 
-type AuthService interface {
-	Login(ctx context.Context, login *model.Login) (string, error)
-	GetRefreshToken(ctx context.Context, refreshToken string) (string, error)
-	GetAccessToken(ctx context.Context, accessToken string) (string, error)
+type AccessService interface {
+	Check(ctx context.Context, endpointAddress string) error
 }
 
-type AccessService interface {
-	Check(ctx context.Context, address string) error
+type LoginService interface {
+	Login(ctx context.Context, info *model.UserClaims) (string, error)
+	GetAccessToken(ctx context.Context, token string) (string, error)
+	GetRefreshToken(ctx context.Context, token string) (string, error)
 }

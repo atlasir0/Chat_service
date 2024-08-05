@@ -1,26 +1,22 @@
 package access
 
 import (
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository"
-	def "github.com/atlasir0/Chat_service/Auth_chat/internal/service"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/service"
 )
 
-const (
-	authPrefix      = "Bearer "
-	accessTokenName = "access"
-)
-
-var _ def.AccessService = (*service)(nil)
-
-type service struct {
-	permRepository   repository.PermRepository
-	secretRepository repository.SecretRepository
+type serverAccess struct {
+	accessRepository repository.AccessRepository
+	txManager        db.TxManager
 }
 
-// NewService - ...
-func NewService(permRepository repository.PermRepository, secretRepository repository.SecretRepository) *service {
-	return &service{
-		permRepository:   permRepository,
-		secretRepository: secretRepository,
+func NewService(
+	accessRepository repository.AccessRepository,
+	txManager db.TxManager,
+) service.AccessService {
+	return &serverAccess{
+		accessRepository: accessRepository,
+		txManager:        txManager,
 	}
 }

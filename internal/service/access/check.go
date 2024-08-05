@@ -9,10 +9,17 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var accessibleRoles map[string]int32
+const (
+	grpcPort   = 50051
+	authPrefix = "Bearer "
 
-// Check - ...
-func (s *service) Check(ctx context.Context, address string) error {
+	refreshTokenSecretKey = "W4/X+LLjehdxptt4YgGFCvMpq5ewptpZZYRHY6A72g0="
+	accessTokenSecretKey  = "VqvguGiffXILza1f44TWXowDT4zwf03dtXmqWW4SYyE="
+)
+
+var accessibleRoles map[string]string
+
+func (s *serverAccess) Check(ctx context.Context, endpointAddress string) error {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return errors.New("metadata is not provided")
@@ -29,11 +36,6 @@ func (s *service) Check(ctx context.Context, address string) error {
 
 	accessToken := strings.TrimPrefix(authHeader[0], authPrefix)
 
-	accessTokenSecretKey, err := s.secretRepository.GetKeyTokens(ctx, accessTokenName)
-	if err != nil {
-		return errors.New("key receipt error")
-	}
-
 	claims, err := utils.VerifyToken(accessToken, []byte(accessTokenSecretKey))
 	if err != nil {
 		return errors.New("access token is invalid")
@@ -44,7 +46,7 @@ func (s *service) Check(ctx context.Context, address string) error {
 		return errors.New("failed to get accessible roles")
 	}
 
-	role, ok := accessibleMap[address]
+	role, ok := accessibleMap[endpointAddress]
 	if !ok {
 		return nil
 	}
@@ -57,19 +59,13 @@ func (s *service) Check(ctx context.Context, address string) error {
 }
 
 // Возвращает мапу с адресом эндпоинта и ролью, которая имеет доступ к нему
-func (s *service) accessibleRoles(ctx context.Context) (map[string]int32, error) {
+func (s *serverAccess) accessibleRoles(ctx context.Context) (map[string]string, error) {
 	if accessibleRoles == nil {
-		accessibleRoles = make(map[string]int32)
-
-		// Лезем в базу за данными о доступных ролях для каждого эндпоинта
-		permissions, err := s.permRepository.GetPermission(ctx)
+		Roles, err := s.accessRepository.Roles(ctx)
 		if err != nil {
-			return nil, err
+			return nil, nil
 		}
-
-		for _, perm := range permissions {
-			accessibleRoles[perm.Permission] = perm.Role
-		}
+		accessibleRoles = Roles
 	}
 
 	return accessibleRoles, nil

@@ -14,13 +14,3 @@ service AccessV1 {
 message CheckRequest{
 	string endpoint_address = 1;
 }
-
-var x, y int
-go func() {
-    fmt.Print("y:", y, " ") // A2
-    x = 1                   // A1
-}()
-go func() {
-    fmt.Print("x:", x, " ") // B2
-    y = 1                   // B1
-}()

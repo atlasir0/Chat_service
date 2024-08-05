@@ -11,6 +11,8 @@ import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/interceptor"
+	descAccess "github.com/atlasir0/Chat_service/Auth_chat/pkg/access_v1"
+	descAuth "github.com/atlasir0/Chat_service/Auth_chat/pkg/auth_v1"
 	desc "github.com/atlasir0/Chat_service/Auth_chat/pkg/note_v1"
 	_ "github.com/atlasir0/Chat_service/Auth_chat/statik"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -122,6 +124,8 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 	reflection.Register(a.grpcServer)
 
 	desc.RegisterUserServiceServer(a.grpcServer, a.serviceProvider.NoteImpl(ctx))
+	descAuth.RegisterAuthV1Server(a.grpcServer, a.serviceProvider.LoginImpl(ctx))
+	descAccess.RegisterAccessV1Server(a.grpcServer, a.serviceProvider.AccessImpl(ctx))
 	return nil
 }
 

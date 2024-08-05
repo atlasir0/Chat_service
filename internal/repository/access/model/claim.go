@@ -3,7 +3,7 @@ package model
 import "github.com/dgrijalva/jwt-go"
 
 const (
-	ExamplePath = "/user/v1/create"
+	ExamplePath = "/auth_v1.AuthV1/Get"
 )
 
 type UserClaims struct {

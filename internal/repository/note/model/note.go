@@ -15,6 +15,7 @@ type User struct {
 	UpdatedAt sql.NullTime `db:"updated_at"`
 }
 
+
 type UserFilter struct {
 	ID   *int64
 	Name *string

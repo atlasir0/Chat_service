@@ -108,7 +108,7 @@ func (r *repo) Update(ctx context.Context, user *model.User) error {
 	// Делаем запрос на обновление записи в таблице auth
 	builderUpdate := sq.Update(tableName).PlaceholderFormat(sq.Dollar)
 	if len(user.Name) > 0 {
-		builderUpdate = builderUpdate.Set(tableName, user.Name)
+		builderUpdate = builderUpdate.Set(nameColumn, user.Name)
 	}
 	if len(user.Email) > 0 {
 		builderUpdate = builderUpdate.Set(emailColumn, user.Email)

@@ -2,6 +2,8 @@ version: '3'
 
 volumes:
   postgres_volume_local:
+  prometheus_data:
+  grafana_data:
 
 services:
   pg-local:
@@ -13,11 +15,28 @@ services:
     volumes:
       - postgres_volume_local:/var/lib/postgresql/data
 
+  prometheus:
+    image: prom/prometheus:v2.37.9
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alerts.yml:/etc/prometheus/alerts.yml
+      - prometheus_data:/prometheus
+    networks:
+      - services-network
 
-  migrator-local:
-    build:
-      context: .
-      dockerfile: migration_local.Dockerfile
-    restart: on-failure
-    environment:
-      DB_HOST: localhost
+  grafana:
+    image: grafana/grafana-oss:10.0.3
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - services-network
+
+
+networks:
+  services-network:
+    name: service-net
+    external: true

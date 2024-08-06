@@ -6,28 +6,40 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
+	"time"
 
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/logger"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/metric"
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/interceptor"
 	descAccess "github.com/atlasir0/Chat_service/Auth_chat/pkg/access_v1"
 	descAuth "github.com/atlasir0/Chat_service/Auth_chat/pkg/auth_v1"
 	desc "github.com/atlasir0/Chat_service/Auth_chat/pkg/note_v1"
-	_ "github.com/atlasir0/Chat_service/Auth_chat/statik"
+	_ "github.com/atlasir0/Chat_service/Auth_chat/statik" // Статика для свагера
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/natefinch/lumberjack"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
+const readHeaderTimeout = 5 * time.Second
+
 type App struct {
-	serviceProvider *serviceProvider
-	grpcServer      *grpc.Server
-	httpServer      *http.Server
-	swaggerServer   *http.Server
+	serviceProvider  *serviceProvider
+	grpcServer       *grpc.Server
+	httpServer       *http.Server
+	swaggerServer    *http.Server
+	prometheusServer *http.Server
 }
 
 func NewApp(ctx context.Context) (*App, error) {
@@ -48,7 +60,7 @@ func (a *App) Run() error {
 	}()
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -77,6 +89,15 @@ func (a *App) Run() error {
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+
+		err := a.runPrometheusServer()
+		if err != nil {
+			log.Fatalf("failed to run Prometheus server: %v", err)
+		}
+	}()
+
 	wg.Wait()
 
 	return nil
@@ -89,6 +110,8 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initGRPCServer,
 		a.initHTTPServer,
 		a.initSwaggerServer,
+		a.initLogger,
+		a.initPrometheusServer,
 	}
 
 	for _, f := range inits {
@@ -118,9 +141,14 @@ func (a *App) initServiceProvider(_ context.Context) error {
 func (a *App) initGRPCServer(ctx context.Context) error {
 	a.grpcServer = grpc.NewServer(
 		grpc.Creds(insecure.NewCredentials()),
-		grpc.UnaryInterceptor(interceptor.ValidateInterceptor),
+		grpc.UnaryInterceptor(
+			grpcMiddleware.ChainUnaryServer(
+				interceptor.LogInterceptor,
+				interceptor.ValidateInterceptor,
+				interceptor.MetricsInterceptor,
+			),
+		),
 	)
-
 	reflection.Register(a.grpcServer)
 
 	desc.RegisterUserServiceServer(a.grpcServer, a.serviceProvider.NoteImpl(ctx))
@@ -251,4 +279,68 @@ func serveSwaggerFile(path string) http.HandlerFunc {
 
 		log.Printf("Served swagger file: %s", path)
 	}
+}
+
+func (a *App) initLogger(_ context.Context) error {
+	stdout := zapcore.AddSync(os.Stdout)
+
+	file := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   "logs/app.log",
+		MaxSize:    10, // megabytes
+		MaxBackups: 3,
+		MaxAge:     7, // days
+	})
+
+	productionCfg := zap.NewProductionEncoderConfig()
+	productionCfg.TimeKey = "timestamp"
+	productionCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+
+	developmentCfg := zap.NewDevelopmentEncoderConfig()
+	developmentCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
+	consoleEncoder := zapcore.NewConsoleEncoder(developmentCfg)
+	fileEncoder := zapcore.NewJSONEncoder(productionCfg)
+
+	var level zapcore.Level
+
+	if err := level.Set(a.serviceProvider.LoggerConfig().LoggerLevel()); err != nil {
+		log.Fatalf("failed to set log level: %v", err)
+	}
+
+	core := zapcore.NewTee(
+		zapcore.NewCore(consoleEncoder, stdout, level),
+		zapcore.NewCore(fileEncoder, file, level),
+	)
+
+	logger.Init(core)
+	return nil
+}
+
+func (a *App) initPrometheusServer(ctx context.Context) error {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	a.prometheusServer = &http.Server{
+		Addr:              a.serviceProvider.PrometheusConfig().Address(),
+		Handler:           mux,
+		ReadHeaderTimeout: readHeaderTimeout,
+	}
+
+	err := metric.Init(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) runPrometheusServer() error {
+	log.Printf("Prometheus server is running on %s", a.serviceProvider.PrometheusConfig().Address())
+
+	err := a.prometheusServer.ListenAndServe()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -38,3 +38,20 @@ func ToUserFromDescCreate(user *desc.User) *model.User {
 		Role:     int(user.Role),
 	}
 }
+
+func ToUserFromDescUpdate(req *desc.UpdateRequest) *model.User {
+	user := &model.User{
+		ID: req.Id,
+	}
+
+	if req.Name != nil {
+		user.Name = req.Name.Value
+	}
+
+	if req.Email != nil {
+		user.Email = req.Email.Value
+	}
+	user.Role = int(req.Role)
+
+	return user
+}

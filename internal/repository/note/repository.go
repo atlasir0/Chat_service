@@ -36,14 +36,13 @@ func NewRepository(db db.Client) repository.UserRepository {
 }
 
 func (r *repo) Create(ctx context.Context, user *model.User) (int64, error) {
-	//Хэш пароля по DefaultCost
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return 0, err
 	}
 	user.Password = string(hashedPassword)
 
-	// Делаем запрос на вставку записи в таблицу auth
+
 	builderInsert := sq.Insert(tableName).
 		PlaceholderFormat(sq.Dollar).
 		Columns(nameColumn, passwordColumn, emailColumn, roleColumn).
@@ -105,7 +104,6 @@ func (r *repo) Get(ctx context.Context, filter modelRepo.UserFilter) (*model.Use
 }
 
 func (r *repo) Update(ctx context.Context, user *model.User) error {
-	// Делаем запрос на обновление записи в таблице auth
 	builderUpdate := sq.Update(tableName).PlaceholderFormat(sq.Dollar)
 	if len(user.Name) > 0 {
 		builderUpdate = builderUpdate.Set(nameColumn, user.Name)

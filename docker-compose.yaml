@@ -30,6 +30,14 @@ services:
     networks:
       - services-network
 
+  migrator-local:
+    build:
+      context: .
+      dockerfile: migration_local.Dockerfile
+    restart: on-failure
+    environment:
+      DB_HOST: localhost
+
 networks:
   services-network:
     name: auth_service

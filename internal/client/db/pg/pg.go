@@ -2,8 +2,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
@@ -11,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db"
-	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db/prettier"
 )
 
 type key string
@@ -31,7 +28,7 @@ func NewDB(dbc *pgxpool.Pool) db.DB {
 }
 
 func (p *pg) ScanOneContext(ctx context.Context, dest interface{}, q db.Query, args ...interface{}) error {
-	logQuery(ctx, q, args...)
+	//logQuery(ctx, q, args...)
 
 	row, err := p.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -42,7 +39,7 @@ func (p *pg) ScanOneContext(ctx context.Context, dest interface{}, q db.Query, a
 }
 
 func (p *pg) ScanAllContext(ctx context.Context, dest interface{}, q db.Query, args ...interface{}) error {
-	logQuery(ctx, q, args...)
+	//logQuery(ctx, q, args...)
 
 	rows, err := p.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -53,7 +50,7 @@ func (p *pg) ScanAllContext(ctx context.Context, dest interface{}, q db.Query, a
 }
 
 func (p *pg) ExecContext(ctx context.Context, q db.Query, args ...interface{}) (pgconn.CommandTag, error) {
-	logQuery(ctx, q, args...)
+	//logQuery(ctx, q, args...)
 
 	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if ok {
@@ -64,7 +61,7 @@ func (p *pg) ExecContext(ctx context.Context, q db.Query, args ...interface{}) (
 }
 
 func (p *pg) QueryContext(ctx context.Context, q db.Query, args ...interface{}) (pgx.Rows, error) {
-	logQuery(ctx, q, args...)
+	//logQuery(ctx, q, args...)
 
 	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if ok {
@@ -75,7 +72,7 @@ func (p *pg) QueryContext(ctx context.Context, q db.Query, args ...interface{}) 
 }
 
 func (p *pg) QueryRowContext(ctx context.Context, q db.Query, args ...interface{}) pgx.Row {
-	logQuery(ctx, q, args...)
+	//	logQuery(ctx, q, args...)
 
 	tx, ok := ctx.Value(TxKey).(pgx.Tx)
 	if ok {
@@ -102,11 +99,11 @@ func MakeContextTx(ctx context.Context, tx pgx.Tx) context.Context {
 }
 
 // debug logs
-func logQuery(ctx context.Context, q db.Query, args ...interface{}) {
-	prettyQuery := prettier.Pretty(q.QueryRaw, prettier.PlaceholderDollar, args...)
-	log.Println(
-		ctx,
-		fmt.Sprintf("sql: %s", q.Name),
-		fmt.Sprintf("query: %s", prettyQuery),
-	)
-}
+// func logQuery(ctx context.Context, q db.Query, args ...interface{}) {
+// 	prettyQuery := prettier.Pretty(q.QueryRaw, prettier.PlaceholderDollar, args...)
+// 	log.Println(
+// 		ctx,
+// 		fmt.Sprintf("sql: %s", q.Name),
+// 		fmt.Sprintf("query: %s", prettyQuery),
+// 	)
+// }

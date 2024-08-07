@@ -12,7 +12,11 @@ import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db/transaction"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/logger"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/rate_limiter"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository"
+	"github.com/sony/gobreaker"
+	"go.uber.org/zap"
 
 	accessRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/access"
 	loginRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/login"
@@ -24,10 +28,14 @@ import (
 )
 
 type serviceProvider struct {
-	pgConfig      config.PGConfig
-	grpcConfig    config.GRPCConfig
-	httpConfig    config.HTTPConfig
-	swaggerConfig config.SwaggerConfig
+	pgConfig         config.PGConfig
+	grpcConfig       config.GRPCConfig
+	httpConfig       config.HTTPConfig
+	swaggerConfig    config.SwaggerConfig
+	loggerConfig     config.LoggerConfig
+	prometheusConfig config.PrometheusConfig
+	rateLimitConfig  config.RateLimitConfig
+	breakerConfig    config.BreakerConfig
 
 	dbClient         db.Client
 	txManager        db.TxManager
@@ -42,10 +50,100 @@ type serviceProvider struct {
 	noteImpl   *note.Implementation
 	loginImpl  *login.Implementation
 	accessImpl *access.Implementation
+
+	rateLimiter    *rate_limiter.TokenBucketLimiter
+	circuitBreaker *gobreaker.CircuitBreaker
 }
 
 func newServiceProvider() *serviceProvider {
 	return &serviceProvider{}
+}
+
+func (s *serviceProvider) GetRateLimitConfig() config.RateLimitConfig {
+	if s.rateLimitConfig == nil {
+		cfg, err := config.NewRateLimitConfig()
+		if err != nil {
+			logger.Fatal("failed to get rate limit config", zap.Error(err))
+		}
+
+		s.rateLimitConfig = cfg
+	}
+
+	return s.rateLimitConfig
+}
+
+func (s *serviceProvider) GetRateLimiter(ctx context.Context) *rate_limiter.TokenBucketLimiter {
+	if s.rateLimiter == nil {
+		s.rateLimiter = rate_limiter.NewTokenBucketLimiter(
+			ctx,
+			s.GetRateLimitConfig().Limit(),
+			s.GetRateLimitConfig().Period())
+	}
+	return s.rateLimiter
+}
+
+func (s *serviceProvider) GetBreakerConfig() config.BreakerConfig {
+	if s.breakerConfig == nil {
+		cfg, err := config.NewBreakerConfig()
+		if err != nil {
+			logger.Fatal("failed to get circuit breaker config", zap.Error(err))
+		}
+
+		s.breakerConfig = cfg
+	}
+
+	return s.breakerConfig
+}
+
+func (s *serviceProvider) GetBreaker(_ context.Context) *gobreaker.CircuitBreaker {
+	if s.circuitBreaker == nil {
+		s.circuitBreaker = gobreaker.NewCircuitBreaker(gobreaker.Settings{
+			Name:        "auth-service-api",
+			MaxRequests: uint32(s.GetBreakerConfig().Requests()),
+			Interval:    s.GetBreakerConfig().Interval(),
+			Timeout:     s.GetBreakerConfig().Timeout(),
+			ReadyToTrip: func(counts gobreaker.Counts) bool {
+				// >60% of requests failed => open circuit (no new requests allowed)
+				return float64(counts.TotalFailures)/float64(counts.Requests) > 0.6
+			},
+			OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+				logger.Warn("grpc breaker state changed",
+					zap.String("name", name),
+					zap.String("from", from.String()),
+					zap.String("to", to.String()),
+				)
+			},
+		})
+	}
+
+	return s.circuitBreaker
+}
+
+func (s *serviceProvider) PrometheusConfig() config.PrometheusConfig {
+	if s.prometheusConfig == nil {
+		cfg, err := config.NewPrometheusConfig()
+		if err != nil {
+			log.Fatalf("failed to get prometheus config: %s", err.Error())
+		}
+
+		s.prometheusConfig = cfg
+	}
+
+	return s.prometheusConfig
+}
+
+// LoggerConfig - ...
+func (s *serviceProvider) LoggerConfig() config.LoggerConfig {
+	if s.loggerConfig == nil {
+		cfg, err := config.NewLoggerConfig()
+		if err != nil {
+			log.Fatalf("failed to get logger config: %s", err.Error())
+		}
+
+		s.loggerConfig = cfg
+	}
+
+	return s.loggerConfig
 }
 
 func (s *serviceProvider) PGConfig() config.PGConfig {
@@ -198,6 +296,7 @@ func (s *serviceProvider) AccessService(ctx context.Context) service.AccessServi
 
 	return s.accessService
 }
+
 func (s *serviceProvider) AccessImpl(ctx context.Context) *access.Implementation {
 	if s.accessImpl == nil {
 		s.accessImpl = access.NewImplementation(s.AccessService(ctx))

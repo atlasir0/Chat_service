@@ -1,3 +1,4 @@
+include prod.env
 
 LOCAL_BIN:=$(pwd)/bin
 
@@ -51,18 +52,18 @@ generate-auth-api:
 	mkdir -p pkg/auth_v1
 	protoc --proto_path api/auth_v1 \
 	--go_out=pkg/auth_v1 --go_opt=paths=source_relative \
-	--plugin=protoc-gen-go=bin/protoc-gen-go \
+	--plugin=protoc-gen-go=bin/protoc-gen-go.exe \
 	--go-grpc_out=pkg/auth_v1 --go-grpc_opt=paths=source_relative \
-	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
+	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc.exe \
 	api/auth_v1/auth.proto
 
 generate-access-api:
 	mkdir -p pkg/access_v1
 	protoc --proto_path api/access_v1 \
 	--go_out=pkg/access_v1 --go_opt=paths=source_relative \
-	--plugin=protoc-gen-go=bin/protoc-gen-go \
+	--plugin=protoc-gen-go=bin/protoc-gen-go.exe \
 	--go-grpc_out=pkg/access_v1 --go-grpc_opt=paths=source_relative \
-	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
+	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc.exe \
 	api/access_v1/access.proto
 
 build:
@@ -118,3 +119,25 @@ vendor-proto:
 			mv vendor.protogen/openapiv2/protoc-gen-openapiv2/options/*.proto vendor.protogen/protoc-gen-openapiv2/options &&\
 			rm -rf vendor.protogen/openapiv2 ;\
 		fi
+
+grpc-load-test:
+	ghz \
+		--proto api/note_v1/note.proto \
+		--import-paths=./vendor.protogen \
+		--call auth.UserService.Get \
+		--data '{"id": 2}' \
+		--rps 100 \
+		--total 3000 \
+		--insecure \
+		localhost:${GRPC_PORT}
+
+grpc-error-load-test:
+	ghz \
+		--proto api/note_v1/note.proto \
+		--import-paths=./vendor.protogen \
+		--call auth.UserService.Get \
+		--data '{"id": 0}' \
+		--rps 100 \
+		--total 3000 \
+		--insecure \
+		localhost:${GRPC_PORT}

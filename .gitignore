@@ -4,3 +4,5 @@
 .Ds_store
 .vscode
 /logs
+/vendor.protogen
+/vendor.protogen/

@@ -35,7 +35,6 @@ services:
     networks:
       - services-network
 
-
 networks:
   services-network:
     name: service-net

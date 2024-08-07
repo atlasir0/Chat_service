@@ -10,16 +10,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/atlasir0/Chat_service/Auth_chat/internal/logger"
-	"github.com/atlasir0/Chat_service/Auth_chat/internal/metric"
-	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/interceptor"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/logger"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/metric"
 	descAccess "github.com/atlasir0/Chat_service/Auth_chat/pkg/access_v1"
 	descAuth "github.com/atlasir0/Chat_service/Auth_chat/pkg/auth_v1"
 	desc "github.com/atlasir0/Chat_service/Auth_chat/pkg/note_v1"
 	_ "github.com/atlasir0/Chat_service/Auth_chat/statik" // Статика для свагера
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/natefinch/lumberjack"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -146,6 +146,8 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 				interceptor.LogInterceptor,
 				interceptor.ValidateInterceptor,
 				interceptor.MetricsInterceptor,
+				interceptor.NewRateLimiterInterceptor(a.serviceProvider.GetRateLimiter(ctx)).Unary,
+				interceptor.NewCircuitBreakerInterceptor(a.serviceProvider.GetBreaker(ctx)).Unary,
 			),
 		),
 	)

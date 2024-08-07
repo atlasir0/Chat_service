@@ -12,7 +12,9 @@ import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db/transaction"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/rate_limiter"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository"
+	"github.com/sony/gobreaker"
 
 	accessRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/access"
 	loginRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/login"
@@ -30,6 +32,8 @@ type serviceProvider struct {
 	swaggerConfig    config.SwaggerConfig
 	loggerConfig     config.LoggerConfig
 	prometheusConfig config.PrometheusConfig
+	rateLimitConfig  config.RateLimitConfig
+	breakerConfig    config.BreakerConfig
 
 	dbClient         db.Client
 	txManager        db.TxManager
@@ -44,10 +48,70 @@ type serviceProvider struct {
 	noteImpl   *note.Implementation
 	loginImpl  *login.Implementation
 	accessImpl *access.Implementation
+
+	rateLimiter    *rate_limiter.TokenBucketLimiter
+	circuitBreaker *gobreaker.CircuitBreaker
 }
 
 func newServiceProvider() *serviceProvider {
 	return &serviceProvider{}
+}
+
+func (s *serviceProvider) GetRateLimitConfig() config.RateLimitConfig {
+	if s.rateLimitConfig == nil {
+		cfg, err := config.NewRateLimitConfig()
+		if err != nil {
+			log.Fatalf("failed to get rate limit config: %v", err)
+		}
+
+		s.rateLimitConfig = cfg
+	}
+
+	return s.rateLimitConfig
+}
+func (s *serviceProvider) GetRateLimiter(ctx context.Context) *rate_limiter.TokenBucketLimiter {
+	if s.rateLimiter == nil {
+		s.rateLimiter = rate_limiter.NewTokenBucketLimiter(
+			ctx,
+			s.GetRateLimitConfig().Limit(),
+			s.GetRateLimitConfig().Period())
+	}
+
+	return s.rateLimiter
+}
+
+func (s *serviceProvider) GetBreakerConfig() config.BreakerConfig {
+	if s.breakerConfig == nil {
+		cfg, err := config.NewBreakerConfig()
+		if err != nil {
+			log.Fatalf("failed to get circuit breaker config: %v", err)
+		}
+
+		s.breakerConfig = cfg
+	}
+
+	return s.breakerConfig
+}
+
+func (s *serviceProvider) GetBreaker(_ context.Context) *gobreaker.CircuitBreaker {
+	if s.circuitBreaker == nil {
+		s.circuitBreaker = gobreaker.NewCircuitBreaker(gobreaker.Settings{
+			Name:        "auth-service-api",
+			MaxRequests: uint32(s.GetBreakerConfig().Requests()),
+			Interval:    s.GetBreakerConfig().Interval(),
+			Timeout:     s.GetBreakerConfig().Timeout(),
+			ReadyToTrip: func(counts gobreaker.Counts) bool {
+				// >60% of requests failed => open circuit (no new requests allowed)
+				return float64(counts.TotalFailures)/float64(counts.Requests) > 0.6
+			},
+			OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+				log.Fatal("grpc breaker state changed: %s %s -> %s", name, from, to)
+				//WTF?
+			},
+		})
+	}
+
+	return s.circuitBreaker
 }
 
 func (s *serviceProvider) PrometheusConfig() config.PrometheusConfig {

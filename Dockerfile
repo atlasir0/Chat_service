@@ -1,6 +1,5 @@
 FROM golang:1.21.9-alpine AS builder
 
-
 COPY . /github.com/atlasir0/Chat_service/Auth_chat/source/
 WORKDIR /github.com/atlasir0/Chat_service/Auth_chat/source/
 
@@ -13,4 +12,5 @@ WORKDIR /root/
 COPY --from=builder /github.com/atlasir0/Chat_service/Auth_chat/source/bin/auth_service .
 ADD .env .
 
+EXPOSE 2112
 CMD ["./auth_service"]

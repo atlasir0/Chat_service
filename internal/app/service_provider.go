@@ -12,9 +12,11 @@ import (
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/client/db/transaction"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/closer"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/config"
+	"github.com/atlasir0/Chat_service/Auth_chat/internal/logger"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/rate_limiter"
 	"github.com/atlasir0/Chat_service/Auth_chat/internal/repository"
 	"github.com/sony/gobreaker"
+	"go.uber.org/zap"
 
 	accessRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/access"
 	loginRepository "github.com/atlasir0/Chat_service/Auth_chat/internal/repository/login"
@@ -61,7 +63,7 @@ func (s *serviceProvider) GetRateLimitConfig() config.RateLimitConfig {
 	if s.rateLimitConfig == nil {
 		cfg, err := config.NewRateLimitConfig()
 		if err != nil {
-			log.Fatalf("failed to get rate limit config: %v", err)
+			logger.Fatal("failed to get rate limit config", zap.Error(err))
 		}
 
 		s.rateLimitConfig = cfg
@@ -69,6 +71,7 @@ func (s *serviceProvider) GetRateLimitConfig() config.RateLimitConfig {
 
 	return s.rateLimitConfig
 }
+
 func (s *serviceProvider) GetRateLimiter(ctx context.Context) *rate_limiter.TokenBucketLimiter {
 	if s.rateLimiter == nil {
 		s.rateLimiter = rate_limiter.NewTokenBucketLimiter(
@@ -76,7 +79,6 @@ func (s *serviceProvider) GetRateLimiter(ctx context.Context) *rate_limiter.Toke
 			s.GetRateLimitConfig().Limit(),
 			s.GetRateLimitConfig().Period())
 	}
-
 	return s.rateLimiter
 }
 
@@ -84,7 +86,7 @@ func (s *serviceProvider) GetBreakerConfig() config.BreakerConfig {
 	if s.breakerConfig == nil {
 		cfg, err := config.NewBreakerConfig()
 		if err != nil {
-			log.Fatalf("failed to get circuit breaker config: %v", err)
+			logger.Fatal("failed to get circuit breaker config", zap.Error(err))
 		}
 
 		s.breakerConfig = cfg
@@ -105,8 +107,11 @@ func (s *serviceProvider) GetBreaker(_ context.Context) *gobreaker.CircuitBreake
 				return float64(counts.TotalFailures)/float64(counts.Requests) > 0.6
 			},
 			OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-				log.Fatal("grpc breaker state changed: %s %s -> %s", name, from, to)
-				//WTF?
+				logger.Warn("grpc breaker state changed",
+					zap.String("name", name),
+					zap.String("from", from.String()),
+					zap.String("to", to.String()),
+				)
 			},
 		})
 	}
@@ -291,6 +296,7 @@ func (s *serviceProvider) AccessService(ctx context.Context) service.AccessServi
 
 	return s.accessService
 }
+
 func (s *serviceProvider) AccessImpl(ctx context.Context) *access.Implementation {
 	if s.accessImpl == nil {
 		s.accessImpl = access.NewImplementation(s.AccessService(ctx))
